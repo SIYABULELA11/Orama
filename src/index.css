@@ -1,0 +1,147 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,0,1;wght@300;400;500;700;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Updated palette */
+    --color-primary-light-hex: #004C99; /* provided primary light */
+    --color-primary-dark-hex: #0072FF; /* provided primary dark */
+    --color-bg-light-hex: #FFFFFF;
+    --color-bg-dark-hex: #0D1B2A;
+
+    /* Derive HSL approximations for tailwind integration */
+    /* #004C99 -> hsl(207,100%,30%) | #0072FF -> hsl(211,100%,50%) */
+    --orama-primary: 207 100% 30%;
+    --orama-primary-light: 211 100% 50%;
+    --orama-primary-accent: 211 100% 55%;
+    --orama-light-blue: 211 100% 85%;
+    
+    /* Background colors */
+    --background: 0 0% 100%; /* new light background */
+    --foreground: 0 0% 13%; /* Dark text */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 13%;
+
+    /* Header and navigation */
+    --header-bg: var(--orama-primary);
+    --header-text: 0 0% 98%; /* White text */
+    --nav-hover: var(--orama-light-blue);
+    --nav-active: var(--orama-primary-accent);
+
+    /* Sidebar */
+    --sidebar-background: var(--orama-primary);
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-hover: var(--orama-primary-light);
+    --sidebar-active: var(--orama-primary-accent);
+
+    /* Standard shadcn colors for compatibility */
+    --primary: var(--orama-primary);
+    --primary-foreground: 0 0% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: var(--orama-primary-light);
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: var(--orama-primary);
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 13%;
+
+    --radius: 0.5rem;
+
+    /* Overlay / translucency helpers */
+    --overlay-sidebar-hover: rgba(255, 255, 255, 0.12);
+    --overlay-sidebar-active: rgba(255, 255, 255, 0.20);
+    --overlay-card: hsla(0,0%,100%,0.6);
+    --overlay-card-border: hsla(0,0%,100%,0.25);
+
+    /* Layout dimensions matching original */
+    --header-height: 140px; /* increased further by 20px */
+    --sidebar-width: 230px; /* increased by 10px */
+  }
+
+  .dark {
+    /* Apply dark palette - darker header/sidebar */
+    --orama-primary: 210 40% 15%; /* Much darker for header/sidebar */
+    --orama-primary-light: 210 35% 20%; /* Darker hover state */
+    --orama-primary-accent: 210 45% 25%; /* Darker active state */
+    --orama-light-blue: 211 100% 85%;
+
+    --background: 210 24% 8%; /* darker navy for proper contrast */
+    --foreground: 210 40% 96%;
+    --card: 210 30% 12%; /* darker cards */
+    --card-foreground: 0 0% 98%;
+    --popover: 210 30% 14%;
+    --popover-foreground: 0 0% 98%;
+    --primary: var(--orama-primary);
+    --primary-foreground: 0 0% 98%;
+    --secondary: 210 25% 20%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 210 25% 20%;
+    --muted-foreground: 210 15% 70%;
+    --accent: var(--orama-primary-accent);
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 215 24% 22%;
+    --input: 215 24% 22%;
+    --ring: var(--orama-primary);
+    
+    /* Dark theme overlay variables */
+    --overlay-sidebar-hover: rgba(255, 255, 255, 0.10);
+    --overlay-sidebar-active: rgba(255, 255, 255, 0.18);
+    --overlay-card: hsla(210,30%,15%,0.8);
+    --overlay-card-border: hsla(210,30%,35%,0.4);
+    
+    /* Header and navigation for dark theme */
+    --header-bg: var(--orama-primary);
+    --header-text: 0 0% 98%;
+    --nav-hover: var(--orama-light-blue);
+    --nav-active: var(--orama-primary-accent);
+    --sidebar-background: var(--orama-primary);
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-hover: var(--orama-primary-light);
+    --sidebar-active: var(--orama-primary-accent);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html, body, #root {
+    @apply bg-background text-foreground;
+    font-family: 'Roboto', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    width: 100%;
+  }
+
+  /* Custom transitions and animations */
+  .orama-transition {
+    transition: all 0.2s ease;
+  }
+
+  /* Ensure all pages have consistent background */
+  .page-container {
+    min-height: 100vh;
+    background-color: hsl(var(--background));
+  }
+
+  .bg-orama-primary,
+  .bg-primary,
+  .bg-blue {
+    background-color: hsl(var(--orama-primary)) !important;
+  }
+
+  .text-orama-primary {
+    color: hsl(var(--orama-primary)) !important;
+  }
+}
