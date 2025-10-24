@@ -32,7 +32,7 @@ interface ColorOption {
 }
 
 const MySchedules = () => {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 8, 15)); // September 2025
+  const [currentDate, setCurrentDate] = useState(new Date()); // Use current date
   const [viewMode, setViewMode] = useState<'daily' | 'weekly' | 'monthly' | 'semester'>('monthly');
   const [displayMode, setDisplayMode] = useState<'grid' | 'list'>('grid');
   const [selectedColor, setSelectedColor] = useState('blue');
@@ -759,6 +759,9 @@ const MySchedules = () => {
 
   const renderCalendarDays = () => {
     const days = [];
+    const today = new Date();
+    const isCurrentMonth = currentDate.getMonth() === today.getMonth() && 
+                          currentDate.getFullYear() === today.getFullYear();
     
     // Previous month's trailing days
     for (let i = 0; i < firstDayOfMonth; i++) {
@@ -772,7 +775,7 @@ const MySchedules = () => {
 
     // Current month days
     for (let day = 1; day <= daysInMonth; day++) {
-      const isToday = day === 15; // Highlighting 15th as today
+      const isToday = isCurrentMonth && day === today.getDate();
       const dayEvents = getEventsForDay(day);
       
       days.push(
@@ -829,43 +832,43 @@ const MySchedules = () => {
   };
 
   return (
-    <div className="flex gap-6">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
       {/* Main Content */}
-      <div className="flex-1 space-y-6">
+      <div className="flex-1 space-y-4 sm:space-y-6">
         {/* Page Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold text-orama-primary flex items-center gap-3">
-              <Calendar className="h-8 w-8" />
+            <h1 className="text-2xl sm:text-3xl font-bold text-orama-primary flex items-center gap-2 sm:gap-3">
+              <Calendar className="h-6 w-6 sm:h-8 sm:w-8" />
               My Schedules
             </h1>
-            <p className="text-muted-foreground mt-2">Manage your academic schedule and track your classes</p>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">Manage your academic schedule and track your classes</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             <Button 
               onClick={downloadAsPDF}
               disabled={isExporting}
               variant="outline" 
-              className="border-green-600 text-green-600 hover:bg-green-600 hover:text-white download-button"
+              className="border-green-600 text-green-600 hover:bg-green-600 hover:text-white download-button flex-1 sm:flex-none text-xs sm:text-sm"
               data-exclude-pdf="true"
             >
-              <FileText className="h-4 w-4 mr-2" />
-              {isExporting ? 'Exporting...' : 'Download PDF'}
+              <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              {isExporting ? 'Exporting...' : 'PDF'}
             </Button>
             <Button 
               onClick={downloadAsImage}
               disabled={isExporting}
               variant="outline" 
-              className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white download-button"
+              className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white download-button flex-1 sm:flex-none text-xs sm:text-sm"
               data-exclude-pdf="true"
             >
-              <FileImage className="h-4 w-4 mr-2" />
-              {isExporting ? 'Exporting...' : 'Download Image'}
+              <FileImage className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              {isExporting ? 'Exporting...' : 'Image'}
             </Button>
             <Dialog open={isAddingEvent} onOpenChange={setIsAddingEvent}>
               <DialogTrigger asChild>
-                <Button className="bg-orama-primary hover:bg-orama-primary-light text-white">
-                  <Plus className="h-4 w-4 mr-2" />
+                <Button className="bg-orama-primary hover:bg-orama-primary-light text-white flex-1 sm:flex-none text-xs sm:text-sm">
+                  <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Add Schedule
                 </Button>
               </DialogTrigger>
@@ -889,11 +892,16 @@ const MySchedules = () => {
                       <Input
                         id="date"
                         value={newEvent.date}
-                        onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '');
+                          if (value === '' || (parseInt(value) >= 1 && parseInt(value) <= 31)) {
+                            setNewEvent({ ...newEvent, date: value });
+                          }
+                        }}
                         placeholder="Day (1-31)"
-                        type="number"
-                        min="1"
-                        max="31"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={2}
                       />
                     </div>
                     <div>
@@ -901,11 +909,16 @@ const MySchedules = () => {
                       <Input
                         id="month"
                         value={newEvent.month}
-                        onChange={(e) => setNewEvent({ ...newEvent, month: e.target.value })}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '');
+                          if (value === '' || (parseInt(value) >= 1 && parseInt(value) <= 12)) {
+                            setNewEvent({ ...newEvent, month: value });
+                          }
+                        }}
                         placeholder="Month (1-12)"
-                        type="number"
-                        min="1"
-                        max="12"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={2}
                       />
                     </div>
                     <div>
@@ -913,11 +926,16 @@ const MySchedules = () => {
                       <Input
                         id="year"
                         value={newEvent.year}
-                        onChange={(e) => setNewEvent({ ...newEvent, year: e.target.value })}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '');
+                          if (value === '' || (parseInt(value) >= 2024 && parseInt(value) <= 2099)) {
+                            setNewEvent({ ...newEvent, year: value });
+                          }
+                        }}
                         placeholder="Year"
-                        type="number"
-                        min="2024"
-                        max="2030"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={4}
                       />
                     </div>
                   </div>
@@ -994,43 +1012,6 @@ const MySchedules = () => {
                       </Select>
                     </div>
                   )}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="type">Type</Label>
-                      <Select value={newEvent.type} onValueChange={(value: ScheduleEvent['type']) => setNewEvent({ ...newEvent, type: value })}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="lecture">Lecture</SelectItem>
-                          <SelectItem value="tutorial">Tutorial</SelectItem>
-                          <SelectItem value="test">Test</SelectItem>
-                          <SelectItem value="exam">Exam</SelectItem>
-                          <SelectItem value="assignment">Assignment</SelectItem>
-                          <SelectItem value="culture">Culture</SelectItem>
-                          <SelectItem value="work">Work</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="color">Color</Label>
-                      <Select value={newEvent.color} onValueChange={(value) => setNewEvent({ ...newEvent, color: value })}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {colorOptions.map((color) => (
-                            <SelectItem key={color.value} value={color.value}>
-                              <div className="flex items-center gap-2">
-                                <div className={`w-3 h-3 rounded-full ${color.bg}`}></div>
-                                {color.name}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
                   <div>
                     <Label htmlFor="location">Location (Optional)</Label>
                     <Input

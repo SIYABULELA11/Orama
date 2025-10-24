@@ -87,39 +87,39 @@ const Settings = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-orama-primary flex items-center gap-3">
-            <SettingsIcon className="h-8 w-8" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-orama-primary flex items-center gap-2 sm:gap-3">
+            <SettingsIcon className="h-6 w-6 sm:h-8 sm:w-8" />
             Settings
           </h1>
-          <p className="text-muted-foreground mt-2">Customize your Orama experience</p>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">Customize your Orama experience</p>
         </div>
         <Button 
           onClick={handleSave}
-          className="bg-orama-primary hover:bg-orama-primary-light text-white"
+          className="bg-orama-primary hover:bg-orama-primary-light text-white w-full sm:w-auto text-sm"
         >
           <Save className="h-4 w-4 mr-2" />
           Save Changes
         </Button>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Main Settings */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           {/* (Profile Information moved to Profile page) */}
 
           {/* Notification Settings */}
           <Card className="bg-white shadow-lg">
-            <CardHeader className="bg-orama-primary text-white">
-              <CardTitle className="flex items-center gap-3">
-                <Bell className="h-5 w-5" />
+            <CardHeader className="bg-orama-primary text-white p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 sm:gap-3 text-base sm:text-lg">
+                <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
                 Notification Preferences
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <Label>Email Notifications</Label>

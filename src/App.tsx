@@ -14,6 +14,7 @@ import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import Accessibility from "./pages/Accessibility";
 import FAQ from "./pages/FAQ";
+import Support from "./pages/Support";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login.tsx";
 
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="settings" element={<Settings />} />
             <Route path="profile" element={<Profile />} />
             <Route path="accessibility" element={<Accessibility />} />
+            <Route path="support" element={<Support />} />
             <Route path="faq" element={<FAQ />} />
             <Route path="logout" element={<Navigate to="/" replace />} />
 

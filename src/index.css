@@ -6,14 +6,11 @@
 
 @layer base {
   :root {
-    /* Updated palette */
-    --color-primary-light-hex: #004C99; /* provided primary light */
-    --color-primary-dark-hex: #0072FF; /* provided primary dark */
-    --color-bg-light-hex: #FFFFFF;
-    --color-bg-dark-hex: #0D1B2A;
+    /* Primary color palette for general.css gradient */
+    --color-primary-light-hex: #004C99;
+    --color-primary-dark-hex: #0072FF;
 
-    /* Derive HSL approximations for tailwind integration */
-    /* #004C99 -> hsl(207,100%,30%) | #0072FF -> hsl(211,100%,50%) */
+    /* HSL color system for Tailwind */
     --orama-primary: 207 100% 30%;
     --orama-primary-light: 211 100% 50%;
     --orama-primary-accent: 211 100% 55%;
@@ -63,8 +60,20 @@
     --overlay-card-border: hsla(0,0%,100%,0.25);
 
     /* Layout dimensions matching original */
-    --header-height: 140px; /* increased further by 20px */
+    --header-height: 80px; /* Responsive - mobile friendly */
     --sidebar-width: 230px; /* increased by 10px */
+  }
+
+  @media (min-width: 640px) {
+    :root {
+      --header-height: 100px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    :root {
+      --header-height: 140px;
+    }
   }
 
   .dark {
