@@ -97,9 +97,16 @@ function isFunctionToolCall(x: unknown): x is FunctionToolCall {
 app.post("/api/ai/chat", async (req: Request, res: Response) => {
   try {
     const { messages } = req.body as {
-      messages: { role: "user" | "assistant" | "system"; content: string }[];
+      messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[];
     };
 
+    console.log('📨 Received chat request with', messages.length, 'messages');
+
+    if (!messages || messages.length === 0) {
+      return res.status(400).json({ error: 'No messages provided' });
+    }
+
+    // First API call with user messages
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
@@ -113,10 +120,15 @@ app.post("/api/ai/chat", async (req: Request, res: Response) => {
 
     const toolCallCandidate = (msg.tool_calls ?? [])[0];
 
+    // If there's a tool call, execute it and get final response
     if (isFunctionToolCall(toolCallCandidate)) {
       const fnName = toolCallCandidate.function.name;
       const argsJson = toolCallCandidate.function.arguments ?? "{}";
       const args = JSON.parse(argsJson);
+
+      console.log('🔧 Tool called:', fnName, 'with args:', args);
+
+      let toolResult: unknown = { ok: false };
 
       if (fnName === "add_task") {
         const newTask = TaskSchema.parse({
@@ -128,15 +140,8 @@ app.post("/api/ai/chat", async (req: Request, res: Response) => {
           completed: false,
         });
         tasks.push(newTask);
-        return res.json({
-          messages: [
-            {
-              role: "tool",
-              tool_call_id: toolCallCandidate.id,
-              content: JSON.stringify({ ok: true, task: newTask }),
-            },
-          ],
-        });
+        toolResult = { ok: true, task: newTask };
+        console.log('✅ Task added:', newTask);
       }
 
       if (fnName === "list_upcoming") {
@@ -146,36 +151,44 @@ app.post("/api/ai/chat", async (req: Request, res: Response) => {
         const upcoming = tasks.filter(
           (t) => !t.completed && t.dueDate && new Date(t.dueDate) <= cutoff
         );
-        return res.json({
-          messages: [
-            {
-              role: "tool",
-              tool_call_id: toolCallCandidate.id,
-              content: JSON.stringify({ ok: true, tasks: upcoming }),
-            },
-          ],
-        });
+        toolResult = { ok: true, tasks: upcoming };
+        console.log('📋 Listed', upcoming.length, 'upcoming tasks');
       }
 
       if (fnName === "complete_task") {
         const idx = tasks.findIndex((t) => t.id === args.id);
         if (idx >= 0) tasks[idx].completed = true;
-        return res.json({
-          messages: [
-            {
-              role: "tool",
-              tool_call_id: toolCallCandidate.id,
-              content: JSON.stringify({ ok: idx >= 0 }),
-            },
-          ],
-        });
+        toolResult = { ok: idx >= 0 };
+        console.log('✓ Task completed:', idx >= 0);
       }
+
+      // Make second API call with tool result to get natural language response
+      const secondCompletion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          ...messages,
+          msg,
+          {
+            role: "tool",
+            tool_call_id: toolCallCandidate.id,
+            content: JSON.stringify(toolResult),
+          },
+        ],
+        temperature: 0.3,
+      });
+
+      const reply = secondCompletion.choices[0].message.content;
+      console.log('💬 Bot reply:', reply);
+      return res.json({ reply });
     }
 
     // No tool call → plain assistant reply
-    return res.json({ reply: choice.message.content });
+    const reply = choice.message.content;
+    console.log('💬 Bot reply (no tool):', reply);
+    return res.json({ reply });
   } catch (err) {
-    console.error(err);
+    console.error('❌ Error in chat endpoint:', err);
     const message = err instanceof Error ? err.message : "Unknown server error";
     res.status(500).json({ error: message });
   }
@@ -183,6 +196,15 @@ app.post("/api/ai/chat", async (req: Request, res: Response) => {
 
 // Debug route
 app.get("/api/tasks", (_req: Request, res: Response) => res.json({ tasks }));
+
+// Health check
+app.get("/api/health", (_req: Request, res: Response) => {
+  res.json({ 
+    status: 'ok', 
+    openaiConfigured: !!process.env.OPENAI_API_KEY,
+    timestamp: new Date().toISOString()
+  });
+});
 
 // ---- Boot server ----
 const PORT = Number(process.env.PORT) || 8787;

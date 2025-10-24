@@ -18,77 +18,20 @@ interface Deadline {
 }
 
 const UpcomingDeadlines = () => {
-  const [deadlines] = useState<Deadline[]>([
-    {
-      id: 1,
-      title: "Calculus Assignment",
-      subject: "Mathematics",
-      dueDate: "2025-09-18",
-      dueTime: "23:59",
-      priority: "high",
-      type: "assignment",
-      status: "pending",
-      description: "Integration problems from chapter 5"
-    },
-    {
-      id: 2,
-      title: "Physics Midterm Exam",
-      subject: "Physics",
-      dueDate: "2025-09-20",
-      dueTime: "14:00",
-      priority: "high",
-      type: "exam",
-      status: "pending",
-      description: "Quantum mechanics and thermodynamics"
-    },
-    {
-      id: 3,
-      title: "Chemistry Lab Report",
-      subject: "Chemistry",
-      dueDate: "2025-09-22",
-      dueTime: "17:00",
-      priority: "medium",
-      type: "assignment",
-      status: "pending",
-      description: "Organic synthesis experiment results"
-    },
-    {
-      id: 4,
-      title: "History Essay",
-      subject: "History",
-      dueDate: "2025-09-15",
-      dueTime: "12:00",
-      priority: "medium",
-      type: "assignment",
-      status: "overdue",
-      description: "World War II impact analysis"
-    },
-    {
-      id: 5,
-      title: "Biology Quiz",
-      subject: "Biology",
-      dueDate: "2025-09-19",
-      dueTime: "10:00",
-      priority: "low",
-      type: "quiz",
-      status: "pending",
-      description: "Cell structure and functions"
-    },
-    {
-      id: 6,
-      title: "Programming Project",
-      subject: "Computer Science",
-      dueDate: "2025-09-16",
-      dueTime: "23:59",
-      priority: "high",
-      type: "project",
-      status: "submitted",
-      description: "Web application development"
-    }
-  ]);
+  const [deadlines, setDeadlines] = useState<Deadline[]>([]);
 
   const [filter, setFilter] = useState<'all' | 'pending' | 'overdue' | 'submitted'>('all');
   const [sortBy, setSortBy] = useState<'dueDate' | 'priority' | 'subject'>('dueDate');
+
+  const handleAcceptDeadline = (id: number) => {
+    setDeadlines(deadlines.map(deadline =>
+      deadline.id === id ? { ...deadline, status: 'submitted' } : deadline
+    ));
+  };
+
+  const handleDeleteDeadline = (id: number) => {
+    setDeadlines(deadlines.filter(deadline => deadline.id !== id));
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -155,24 +98,24 @@ const UpcomingDeadlines = () => {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-orama-primary flex items-center gap-3">
-            <Clock className="h-8 w-8" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-orama-primary flex items-center gap-2 sm:gap-3">
+            <Clock className="h-6 w-6 sm:h-8 sm:w-8" />
             Upcoming Deadlines
           </h1>
-          <p className="text-muted-foreground mt-2">Track all your assignments, exams, and project deadlines</p>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">Track all your assignments, exams, and project deadlines</p>
         </div>
       </div>
 
       {/* Filters and Sort */}
-      <div className="flex gap-4 items-center">
-        <div>
-          <label className="block text-sm font-medium mb-2">Filter by Status</label>
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
+        <div className="flex-1">
+          <label className="block text-xs sm:text-sm font-medium mb-2">Filter by Status</label>
           <Select value={filter} onValueChange={(value: 'all' | 'pending' | 'overdue' | 'submitted') => setFilter(value)}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-full sm:w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -183,10 +126,10 @@ const UpcomingDeadlines = () => {
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-2">Sort by</label>
+        <div className="flex-1">
+          <label className="block text-xs sm:text-sm font-medium mb-2">Sort by</label>
           <Select value={sortBy} onValueChange={(value: 'dueDate' | 'priority' | 'subject') => setSortBy(value)}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-full sm:w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -199,22 +142,22 @@ const UpcomingDeadlines = () => {
       </div>
 
       {/* Statistics */}
-      <div className="grid md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <Card className="bg-white shadow-lg">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <Calendar className="h-8 w-8 text-orama-primary" />
+          <CardContent className="p-3 sm:p-6">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-orama-primary" />
               <div>
-                <p className="text-2xl font-bold text-orama-primary">{deadlines.length}</p>
-                <p className="text-sm text-muted-foreground">Total Deadlines</p>
+                <p className="text-xl sm:text-2xl font-bold text-orama-primary">{deadlines.length}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Total Deadlines</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
         <Card className="bg-white shadow-lg">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
+          <CardContent className="p-3 sm:p-6">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Clock className="h-8 w-8 text-orange-500" />
               <div>
                 <p className="text-2xl font-bold text-orange-500">
@@ -339,14 +282,23 @@ const UpcomingDeadlines = () => {
                       </td>
                       <td className="p-4">
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            Accept
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            Reschedule
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            Replace
+                          {deadline.status !== 'submitted' && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleAcceptDeadline(deadline.id)}
+                              className="border-green-600 text-green-600 hover:bg-green-600 hover:text-white"
+                            >
+                              Submit
+                            </Button>
+                          )}
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleDeleteDeadline(deadline.id)}
+                            className="text-red-600 hover:bg-red-50"
+                          >
+                            Delete
                           </Button>
                         </div>
                       </td>

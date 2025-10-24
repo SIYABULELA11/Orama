@@ -20,50 +20,46 @@ interface Reminder {
 }
 
 const Reminders = () => {
-  const [reminders, setReminders] = useState<Reminder[]>([
-    {
-      id: 1,
-      title: "Submit Math Assignment",
-      description: "Complete calculus problem set chapters 1-3",
-      dueDate: "2025-09-18",
-      dueTime: "23:59",
-      priority: "high",
-      type: "assignment",
-      completed: false
-    },
-    {
-      id: 2,
-      title: "Physics Lab Report",
-      description: "Write lab report on quantum mechanics experiment",
-      dueDate: "2025-09-20",
-      dueTime: "15:00",
-      priority: "high",
-      type: "assignment",
-      completed: false
-    },
-    {
-      id: 3,
-      title: "Study Group Meeting",
-      description: "Group study session for chemistry exam preparation",
-      dueDate: "2025-09-17",
-      dueTime: "14:00",
-      priority: "medium",
-      type: "meeting",
-      completed: true
-    },
-    {
-      id: 4,
-      title: "Review Biology Notes",
-      description: "Go through cell biology notes before next class",
-      dueDate: "2025-09-19",
-      dueTime: "10:00",
-      priority: "medium",
-      type: "study",
-      completed: false
-    }
-  ]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
 
   const [showAddForm, setShowAddForm] = useState(false);
+  const [newReminder, setNewReminder] = useState({
+    title: '',
+    description: '',
+    dueDate: '',
+    dueTime: '',
+    priority: 'medium' as 'high' | 'medium' | 'low',
+    type: 'other' as 'assignment' | 'exam' | 'meeting' | 'study' | 'other'
+  });
+
+  const handleAddReminder = () => {
+    if (newReminder.title && newReminder.dueDate && newReminder.dueTime) {
+      const reminder: Reminder = {
+        id: Date.now(),
+        title: newReminder.title,
+        description: newReminder.description,
+        dueDate: newReminder.dueDate,
+        dueTime: newReminder.dueTime,
+        priority: newReminder.priority,
+        type: newReminder.type,
+        completed: false
+      };
+      setReminders([...reminders, reminder]);
+      setNewReminder({
+        title: '',
+        description: '',
+        dueDate: '',
+        dueTime: '',
+        priority: 'medium',
+        type: 'other'
+      });
+      setShowAddForm(false);
+    }
+  };
+
+  const handleDeleteReminder = (id: number) => {
+    setReminders(reminders.filter(reminder => reminder.id !== id));
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -108,19 +104,19 @@ const Reminders = () => {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-orama-primary flex items-center gap-3">
-            <Bell className="h-8 w-8" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-orama-primary flex items-center gap-2 sm:gap-3">
+            <Bell className="h-6 w-6 sm:h-8 sm:w-8" />
             Reminders
           </h1>
-          <p className="text-muted-foreground mt-2">Stay on top of your assignments and important dates</p>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">Stay on top of your assignments and important dates</p>
         </div>
         <Button 
           onClick={() => setShowAddForm(!showAddForm)}
-          className="bg-orama-primary hover:bg-orama-primary-light text-white"
+          className="bg-orama-primary hover:bg-orama-primary-light text-white w-full sm:w-auto text-sm"
         >
           <Plus className="h-4 w-4 mr-2" />
           Add Reminder
@@ -130,18 +126,23 @@ const Reminders = () => {
       {/* Add Reminder Form */}
       {showAddForm && (
         <Card className="bg-white shadow-lg">
-          <CardHeader className="bg-orama-primary text-white">
-            <CardTitle>Create New Reminder</CardTitle>
+          <CardHeader className="bg-orama-primary text-white p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">Create New Reminder</CardTitle>
           </CardHeader>
-          <CardContent className="p-6">
-            <div className="grid md:grid-cols-2 gap-4">
+          <CardContent className="p-4 sm:p-6">
+            <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Title</label>
-                <Input placeholder="Enter reminder title" />
+                <label className="block text-xs sm:text-sm font-medium mb-2">Title</label>
+                <Input 
+                  placeholder="Enter reminder title" 
+                  value={newReminder.title}
+                  onChange={(e) => setNewReminder({ ...newReminder, title: e.target.value })}
+                  className="text-sm"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Type</label>
-                <Select>
+                <Select value={newReminder.type} onValueChange={(value: 'assignment' | 'exam' | 'meeting' | 'study' | 'other') => setNewReminder({ ...newReminder, type: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
@@ -156,15 +157,23 @@ const Reminders = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Due Date</label>
-                <Input type="date" />
+                <Input 
+                  type="date" 
+                  value={newReminder.dueDate}
+                  onChange={(e) => setNewReminder({ ...newReminder, dueDate: e.target.value })}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Due Time</label>
-                <Input type="time" />
+                <Input 
+                  type="time" 
+                  value={newReminder.dueTime}
+                  onChange={(e) => setNewReminder({ ...newReminder, dueTime: e.target.value })}
+                />
               </div>
               <div className="md:col-span-1">
                 <label className="block text-sm font-medium mb-2">Priority</label>
-                <Select>
+                <Select value={newReminder.priority} onValueChange={(value: 'high' | 'medium' | 'low') => setNewReminder({ ...newReminder, priority: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
@@ -178,7 +187,11 @@ const Reminders = () => {
             </div>
             <div className="mt-4">
               <label className="block text-sm font-medium mb-2">Description</label>
-              <Textarea placeholder="Add details about this reminder..." />
+              <Textarea 
+                placeholder="Add details about this reminder..." 
+                value={newReminder.description}
+                onChange={(e) => setNewReminder({ ...newReminder, description: e.target.value })}
+              />
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <Button 
@@ -187,7 +200,11 @@ const Reminders = () => {
               >
                 Cancel
               </Button>
-              <Button className="bg-orama-primary hover:bg-orama-primary-light text-white">
+              <Button 
+                className="bg-orama-primary hover:bg-orama-primary-light text-white"
+                onClick={handleAddReminder}
+                disabled={!newReminder.title || !newReminder.dueDate || !newReminder.dueTime}
+              >
                 Create Reminder
               </Button>
             </div>
@@ -312,10 +329,12 @@ const Reminders = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
-                        Edit
-                      </Button>
-                      <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDeleteReminder(reminder.id)}
+                        className="text-red-600 hover:bg-red-50"
+                      >
                         Delete
                       </Button>
                     </div>

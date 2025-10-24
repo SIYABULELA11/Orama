@@ -18,37 +18,53 @@ interface StudyPlan {
 }
 
 const StudyPlanner = () => {
-  const [studyPlans, setStudyPlans] = useState<StudyPlan[]>([
-    {
-      id: 1,
-      subject: "Mathematics",
-      topic: "Calculus Integration",
-      duration: "2 hours",
-      priority: "high",
-      status: "in-progress",
-      dueDate: "2025-09-20"
-    },
-    {
-      id: 2,
-      subject: "Physics",
-      topic: "Quantum Mechanics",
-      duration: "3 hours",
-      priority: "high",
-      status: "pending",
-      dueDate: "2025-09-25"
-    },
-    {
-      id: 3,
-      subject: "Chemistry",
-      topic: "Organic Compounds",
-      duration: "1.5 hours",
-      priority: "medium",
-      status: "completed",
-      dueDate: "2025-09-15"
-    }
-  ]);
+  const [studyPlans, setStudyPlans] = useState<StudyPlan[]>([]);
 
   const [showAddForm, setShowAddForm] = useState(false);
+  const [newPlan, setNewPlan] = useState({
+    subject: '',
+    topic: '',
+    duration: '',
+    priority: 'medium' as 'high' | 'medium' | 'low',
+    status: 'pending' as 'pending' | 'in-progress' | 'completed',
+    dueDate: '',
+    notes: ''
+  });
+
+  const handleAddPlan = () => {
+    if (newPlan.subject && newPlan.topic) {
+      const plan: StudyPlan = {
+        id: Date.now(),
+        subject: newPlan.subject,
+        topic: newPlan.topic,
+        duration: newPlan.duration,
+        priority: newPlan.priority,
+        status: newPlan.status,
+        dueDate: newPlan.dueDate
+      };
+      setStudyPlans([...studyPlans, plan]);
+      setNewPlan({
+        subject: '',
+        topic: '',
+        duration: '',
+        priority: 'medium',
+        status: 'pending',
+        dueDate: '',
+        notes: ''
+      });
+      setShowAddForm(false);
+    }
+  };
+
+  const handleDeletePlan = (id: number) => {
+    setStudyPlans(studyPlans.filter(plan => plan.id !== id));
+  };
+
+  const handleUpdateStatus = (id: number, status: 'pending' | 'in-progress' | 'completed') => {
+    setStudyPlans(studyPlans.map(plan => 
+      plan.id === id ? { ...plan, status } : plan
+    ));
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -69,19 +85,19 @@ const StudyPlanner = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-orama-primary flex items-center gap-3">
-            <BookOpen className="h-8 w-8" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-orama-primary flex items-center gap-2 sm:gap-3">
+            <BookOpen className="h-6 w-6 sm:h-8 sm:w-8" />
             Study Planner
           </h1>
-          <p className="text-muted-foreground mt-2">Organize your study sessions and track your progress</p>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">Organize your study sessions and track your progress</p>
         </div>
         <Button 
           onClick={() => setShowAddForm(!showAddForm)}
-          className="bg-orama-primary hover:bg-orama-primary-light text-white"
+          className="bg-orama-primary hover:bg-orama-primary-light text-white w-full sm:w-auto text-sm"
         >
           <Plus className="h-4 w-4 mr-2" />
           Add Study Plan
@@ -91,26 +107,41 @@ const StudyPlanner = () => {
       {/* Add Study Plan Form */}
       {showAddForm && (
         <Card className="bg-white shadow-lg">
-          <CardHeader className="bg-orama-primary text-white">
-            <CardTitle>Create New Study Plan</CardTitle>
+          <CardHeader className="bg-orama-primary text-white p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">Create New Study Plan</CardTitle>
           </CardHeader>
-          <CardContent className="p-6">
-            <div className="grid md:grid-cols-2 gap-4">
+          <CardContent className="p-4 sm:p-6">
+            <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Subject</label>
-                <Input placeholder="Enter subject name" />
+                <label className="block text-xs sm:text-sm font-medium mb-2">Subject</label>
+                <Input 
+                  placeholder="Enter subject name" 
+                  value={newPlan.subject}
+                  onChange={(e) => setNewPlan({ ...newPlan, subject: e.target.value })}
+                  className="text-sm"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Topic</label>
-                <Input placeholder="Enter topic to study" />
+                <label className="block text-xs sm:text-sm font-medium mb-2">Topic</label>
+                <Input 
+                  placeholder="Enter topic to study" 
+                  value={newPlan.topic}
+                  onChange={(e) => setNewPlan({ ...newPlan, topic: e.target.value })}
+                  className="text-sm"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Duration</label>
-                <Input placeholder="e.g., 2 hours" />
+                <label className="block text-xs sm:text-sm font-medium mb-2">Duration</label>
+                <Input 
+                  placeholder="e.g., 2 hours" 
+                  value={newPlan.duration}
+                  onChange={(e) => setNewPlan({ ...newPlan, duration: e.target.value })}
+                  className="text-sm"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Priority</label>
-                <Select>
+                <Select value={newPlan.priority} onValueChange={(value: 'high' | 'medium' | 'low') => setNewPlan({ ...newPlan, priority: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
@@ -123,11 +154,15 @@ const StudyPlanner = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Due Date</label>
-                <Input type="date" />
+                <Input 
+                  type="date" 
+                  value={newPlan.dueDate}
+                  onChange={(e) => setNewPlan({ ...newPlan, dueDate: e.target.value })}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Status</label>
-                <Select>
+                <Select value={newPlan.status} onValueChange={(value: 'pending' | 'in-progress' | 'completed') => setNewPlan({ ...newPlan, status: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
@@ -141,7 +176,11 @@ const StudyPlanner = () => {
             </div>
             <div className="mt-4">
               <label className="block text-sm font-medium mb-2">Notes</label>
-              <Textarea placeholder="Additional notes or study goals..." />
+              <Textarea 
+                placeholder="Additional notes or study goals..." 
+                value={newPlan.notes}
+                onChange={(e) => setNewPlan({ ...newPlan, notes: e.target.value })}
+              />
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <Button 
@@ -150,7 +189,11 @@ const StudyPlanner = () => {
               >
                 Cancel
               </Button>
-              <Button className="bg-orama-primary hover:bg-orama-primary-light text-white">
+              <Button 
+                className="bg-orama-primary hover:bg-orama-primary-light text-white"
+                onClick={handleAddPlan}
+                disabled={!newPlan.subject || !newPlan.topic}
+              >
                 Create Plan
               </Button>
             </div>
@@ -236,15 +279,21 @@ const StudyPlanner = () => {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
-                      Edit
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleDeletePlan(plan.id)}
+                      className="text-red-600 hover:bg-red-50"
+                    >
+                      Delete
                     </Button>
                     <Button 
                       variant="outline" 
                       size="sm"
                       className="border-orama-primary text-orama-primary hover:bg-orama-primary hover:text-white"
+                      onClick={() => handleUpdateStatus(plan.id, plan.status === 'completed' ? 'pending' : 'in-progress')}
                     >
-                      Start Study
+                      {plan.status === 'completed' ? 'Restart' : 'Start Study'}
                     </Button>
                   </div>
                 </div>
