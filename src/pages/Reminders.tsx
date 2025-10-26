@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Bell, Plus, Calendar, Clock, AlertTriangle } from "lucide-react";
+import { Bell, Plus, Calendar, Clock, AlertTriangle, AlertCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface Reminder {
   id: number;
@@ -20,10 +21,13 @@ interface Reminder {
 }
 
 const Reminders = () => {
+  const { toast } = useToast();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  
+  const [studentNumber, setStudentNumber] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const [form, setForm] = useState<Omit<Reminder, 'id'>>({
     title: "",
     description: "",
@@ -34,32 +38,47 @@ const Reminders = () => {
     completed: false
   });
 
-  // Fetch all reminders from backend
   useEffect(() => {
-    const fetchReminders = async () => {
-      try {
-        const res = await fetch("http://localhost:5000/api/reminders");
-        const data = await res.json();
-
-        const mappedReminders: Reminder[] = data.map((r: any) => ({
-          id: r.id,
-          title: r.title,
-          description: r.description,
-          dueDate: r.due_date,
-          dueTime: r.due_time,
-          priority: r.priority,
-          type: r.type,
-          completed: r.completed === 1 || r.completed === true,
-        }));
-
-        setReminders(mappedReminders);
-      } catch (err) {
-        console.error("Failed to fetch reminders:", err);
-      }
-    };
-
-    fetchReminders();
+    const storedStudentNumber = localStorage.getItem('student_number');
+    if (storedStudentNumber) {
+      setStudentNumber(storedStudentNumber);
+      fetchReminders(storedStudentNumber);
+    }
   }, []);
+
+  const fetchReminders = async (studentNum: string) => {
+    try {
+      setLoading(true);
+      const res = await fetch(`http://localhost:5000/api/reminders?studentNumber=${studentNum}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to fetch reminders");
+      }
+
+      const mappedReminders: Reminder[] = data.map((r: any) => ({
+        id: r.id,
+        title: r.title,
+        description: r.description,
+        dueDate: r.due_date,
+        dueTime: r.due_time,
+        priority: r.priority,
+        type: r.type,
+        completed: r.completed === 1 || r.completed === true,
+      }));
+
+      setReminders(mappedReminders);
+    } catch (err: any) {
+      console.error("Failed to fetch reminders:", err);
+      toast({
+        title: "Error",
+        description: err.message || "Failed to load reminders.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -81,43 +100,76 @@ const Reminders = () => {
   };
 
   const toggleReminder = async (id: number, currentStatus: boolean) => {
+    if (!studentNumber) return;
+
     try {
-      // Optimistic UI
       setReminders(prev =>
         prev.map(r => r.id === id ? { ...r, completed: !currentStatus } : r)
       );
 
-      await fetch(`http://localhost:5000/api/reminders/${id}`, {
+      const res = await fetch(`http://localhost:5000/api/reminders/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ completed: !currentStatus })
+        body: JSON.stringify({ studentNumber, completed: !currentStatus })
       });
+
+      if (!res.ok) {
+        setReminders(prev =>
+          prev.map(r => r.id === id ? { ...r, completed: currentStatus } : r)
+        );
+        throw new Error("Failed to update reminder");
+      }
     } catch (err) {
       console.error("Error toggling reminder:", err);
+      toast({
+        title: "Error",
+        description: "Failed to update reminder status.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleCreateOrEdit = async () => {
+    if (!studentNumber) {
+      toast({
+        title: "Student Number Required",
+        description: "Please set up your profile first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       if (editingId !== null) {
-        // EDIT existing reminder
-        await fetch(`http://localhost:5000/api/reminders/${editingId}`, {
+        const res = await fetch(`http://localhost:5000/api/reminders/${editingId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form)
+          body: JSON.stringify({ studentNumber, ...form })
         });
-        setReminders(prev =>
-          prev.map(r => r.id === editingId ? { ...r, ...form } : r)
-        );
+
+        if (!res.ok) throw new Error("Failed to update reminder");
+
+        await fetchReminders(studentNumber);
+        
+        toast({
+          title: "Success",
+          description: "Reminder updated successfully.",
+        });
       } else {
-        // CREATE new reminder
         const res = await fetch("http://localhost:5000/api/reminders", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form)
+          body: JSON.stringify({ studentNumber, ...form })
         });
-        const data = await res.json();
-        setReminders(prev => [...prev, { id: data.id, ...form }]);
+
+        if (!res.ok) throw new Error("Failed to create reminder");
+
+        await fetchReminders(studentNumber);
+        
+        toast({
+          title: "Success",
+          description: "Reminder created successfully.",
+        });
       }
 
       setForm({
@@ -131,8 +183,13 @@ const Reminders = () => {
       });
       setEditingId(null);
       setShowAddForm(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error creating/updating reminder:", err);
+      toast({
+        title: "Error",
+        description: err.message || "Failed to save reminder.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -150,12 +207,50 @@ const Reminders = () => {
     setShowAddForm(true);
   };
 
+  const handleCancelEdit = () => {
+    setShowAddForm(false);
+    setEditingId(null);
+    setForm({
+      title: "",
+      description: "",
+      dueDate: "",
+      dueTime: "",
+      priority: "medium",
+      type: "other",
+      completed: false
+    });
+  };
+
   const handleDelete = async (id: number) => {
+    if (!studentNumber) return;
+
+    if (!window.confirm("Are you sure you want to delete this reminder?")) {
+      return;
+    }
+
     try {
-      await fetch(`http://localhost:5000/api/reminders/${id}`, { method: "DELETE" });
+      const res = await fetch(`http://localhost:5000/api/reminders/${id}?studentNumber=${studentNumber}`, {
+        method: "DELETE"
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to delete reminder");
+      }
+
       setReminders(prev => prev.filter(r => r.id !== id));
-    } catch (err) {
+      
+      toast({
+        title: "Success",
+        description: "Reminder deleted successfully.",
+      });
+    } catch (err: any) {
       console.error("Error deleting reminder:", err);
+      toast({
+        title: "Error",
+        description: err.message || "Failed to delete reminder.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -170,9 +265,36 @@ const Reminders = () => {
     return new Date(`${a.dueDate}T${a.dueTime}`).getTime() - new Date(`${b.dueDate}T${b.dueTime}`).getTime();
   });
 
+  if (!studentNumber) {
+    return (
+      <div className="space-y-6">
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <AlertCircle className="h-6 w-6 text-blue-600 mt-1" />
+              <div>
+                <h3 className="font-semibold text-blue-900 mb-2">Student Number Required</h3>
+                <p className="text-sm text-blue-700">
+                  Please set up your profile first by entering your student number on the Profile page.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Loading reminders...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-orama-primary flex items-center gap-3">
@@ -180,14 +302,29 @@ const Reminders = () => {
             Reminders
           </h1>
           <p className="text-muted-foreground mt-2">Stay on top of your assignments and important dates</p>
+          <p className="text-xs text-green-600 font-medium mt-1">✓ Linked to student: {studentNumber}</p>
         </div>
-        <Button onClick={() => { setShowAddForm(!showAddForm); setEditingId(null); }} className="bg-orama-primary hover:bg-orama-primary-light text-white">
+        <Button 
+          onClick={() => { 
+            setShowAddForm(!showAddForm); 
+            setEditingId(null);
+            setForm({
+              title: "",
+              description: "",
+              dueDate: "",
+              dueTime: "",
+              priority: "medium",
+              type: "other",
+              completed: false
+            });
+          }} 
+          className="bg-orama-primary hover:bg-orama-primary-light text-white"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Add Reminder
         </Button>
       </div>
 
-      {/* Add/Edit Form */}
       {showAddForm && (
         <Card className="bg-white shadow-lg">
           <CardHeader className="bg-orama-primary text-white">
@@ -237,7 +374,7 @@ const Reminders = () => {
               <Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Add details about this reminder..." />
             </div>
             <div className="flex justify-end gap-2 mt-6">
-              <Button variant="outline" onClick={() => setShowAddForm(false)}>Cancel</Button>
+              <Button variant="outline" onClick={handleCancelEdit}>Cancel</Button>
               <Button className="bg-orama-primary hover:bg-orama-primary-light text-white" onClick={handleCreateOrEdit}>
                 {editingId ? "Update Reminder" : "Create Reminder"}
               </Button>
@@ -246,7 +383,6 @@ const Reminders = () => {
         </Card>
       )}
 
-      {/* Statistics */}
       <div className="grid md:grid-cols-4 gap-4">
         <Card className="bg-white shadow-lg">
           <CardContent className="p-6">
@@ -294,7 +430,6 @@ const Reminders = () => {
         </Card>
       </div>
 
-      {/* Reminders List */}
       <Card className="bg-white shadow-lg">
         <CardHeader className="bg-orama-primary text-white">
           <CardTitle>Your Reminders</CardTitle>
