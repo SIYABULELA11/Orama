@@ -1,0 +1,119 @@
+Code for each database minus upcoming deadlines while we sort that out
+
+PROFILES TABLE
+CREATE TABLE profiles (
+    student_number VARCHAR(100) NOT NULL PRIMARY KEY,
+    full_name VARCHAR(255),
+    email VARCHAR(255) UNIQUE,
+    phone VARCHAR(20),
+    bio TEXT,
+    profile_visibility ENUM('public','private','friends') DEFAULT 'private',
+    share_study_progress TINYINT(1) DEFAULT 0,
+    allow_analytics TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+Accessibility Settings
+CREATE TABLE accessibility_settings (
+    student_number VARCHAR(100) NOT NULL PRIMARY KEY,
+    high_contrast TINYINT(1) DEFAULT 0,
+    text_size ENUM('small','medium','large','xlarge') DEFAULT 'medium',
+    reduced_motion TINYINT(1) DEFAULT 0,
+    dyslexia_font TINYINT(1) DEFAULT 0,
+    focus_outline TINYINT(1) DEFAULT 1,
+    screen_reader_announcements TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_accessibility_student 
+        FOREIGN KEY (student_number) REFERENCES profiles(student_number)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+Reminders Table
+CREATE TABLE reminders (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    student_number VARCHAR(100) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    due_date DATE,
+    due_time TIME,
+    priority ENUM('high', 'medium', 'low') DEFAULT 'medium',
+    type ENUM('assignment', 'exam', 'meeting', 'study', 'other') DEFAULT 'other',
+    completed TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_reminders_student
+        FOREIGN KEY (student_number) REFERENCES profiles(student_number)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+Study plan table
+CREATE TABLE study_plan (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    student_number VARCHAR(100) NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    topic VARCHAR(255) NOT NULL,
+    duration VARCHAR(50),
+    priority ENUM('high','medium','low') DEFAULT 'medium',
+    status ENUM('pending','in-progress','completed') DEFAULT 'pending',
+    due_date DATE,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_study_plan_student
+        FOREIGN KEY (student_number) REFERENCES profiles(student_number)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+
+Settings Table
+CREATE TABLE settings (
+    student_number VARCHAR(100) NOT NULL PRIMARY KEY,
+    email_notifications TINYINT(1) DEFAULT 1,
+    sms_notifications TINYINT(1) DEFAULT 0,
+    push_notifications TINYINT(1) DEFAULT 1,
+    reminder_sound TINYINT(1) DEFAULT 1,
+    reminder_frequency VARCHAR(10) DEFAULT '15',
+    theme ENUM('light','dark','auto') DEFAULT 'light',
+    language VARCHAR(10) DEFAULT 'en',
+    date_format VARCHAR(20) DEFAULT 'DD/MM/YYYY',
+    time_format VARCHAR(10) DEFAULT '24h',
+    default_study_duration VARCHAR(10) DEFAULT '60',
+    week_starts_on VARCHAR(20) DEFAULT 'monday',
+    academic_year VARCHAR(10) DEFAULT '2025',
+    semester VARCHAR(20) DEFAULT '1',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_settings_student
+        FOREIGN KEY (student_number) REFERENCES profiles(student_number)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+My schedule Table
+CREATE TABLE schedule_events (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    student_number VARCHAR(100) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    date INT NOT NULL,
+    month INT NOT NULL,
+    year INT NOT NULL,
+    time VARCHAR(10),
+    type ENUM('lecture','tutorial','test','exam','assignment','culture','work') DEFAULT 'lecture',
+    color VARCHAR(50) DEFAULT 'blue',
+    location VARCHAR(255),
+    is_recurring TINYINT(1) DEFAULT 0,
+    recurring_type ENUM('daily','weekly','monthly'),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_schedule_student
+        FOREIGN KEY (student_number) REFERENCES profiles(student_number)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    INDEX idx_year_student (year, student_number)
+);
+
