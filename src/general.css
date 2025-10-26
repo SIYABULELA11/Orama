@@ -1,4 +1,0 @@
-body {
-    background: linear-gradient(135deg, var(--color-primary-light-hex) 0%, var(--color-primary-dark-hex) 60%) fixed;
-    background-attachment: fixed;
-}
