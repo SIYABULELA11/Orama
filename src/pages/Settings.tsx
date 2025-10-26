@@ -5,35 +5,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Settings as SettingsIcon, Bell, Palette, Globe, Save, Cog } from "lucide-react";
+import { Settings as SettingsIcon, Bell, Palette, Globe, Save, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Settings = () => {
   const { toast } = useToast();
-  const getInitialTheme = () => {
-    const stored = localStorage.getItem('theme-preference');
-    if (stored === 'light' || stored === 'dark' || stored === 'auto') return stored;
-    return 'light';
-  };
+  const [studentNumber, setStudentNumber] = useState("");
+  const [studentNumberLocked, setStudentNumberLocked] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const [settings, setSettings] = useState({
-    // Notification Settings
     emailNotifications: true,
     smsNotifications: false,
     pushNotifications: true,
     reminderSound: true,
-    reminderFrequency: "15", // minutes before deadline
-
-    // Appearance Settings
-  theme: getInitialTheme(),
+    reminderFrequency: "15",
+    theme: "light",
     language: "en",
     dateFormat: "DD/MM/YYYY",
     timeFormat: "24h",
-
-    // Academic Settings
-    defaultStudyDuration: "60", // minutes
+    defaultStudyDuration: "60",
     weekStartsOn: "monday",
     academicYear: "2025",
     semester: "1",
@@ -55,7 +48,17 @@ const Settings = () => {
     }
   };
 
-  // Listen to system changes only when auto is selected
+  // Load student number from localStorage on mount
+  useEffect(() => {
+    const storedStudentNumber = localStorage.getItem('student_number');
+    if (storedStudentNumber) {
+      setStudentNumber(storedStudentNumber);
+      setStudentNumberLocked(true);
+      // Auto-load settings
+      loadSettings(storedStudentNumber);
+    }
+  }, []);
+
   useEffect(() => {
     if (settings.theme !== 'auto') return;
     const mql = window.matchMedia('(prefers-color-scheme: dark)');
@@ -66,14 +69,43 @@ const Settings = () => {
 
   useEffect(() => {
     applyTheme(settings.theme);
-    localStorage.setItem('theme-preference', settings.theme);
   }, [settings.theme]);
 
-  const handleSave = () => {
-    toast({
-      title: "Settings Saved",
-      description: "Your preferences have been updated successfully.",
-    });
+  const loadSettings = async (studentNum: string) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:5000/api/settings/${studentNum}`);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to load settings");
+      }
+      
+      setSettings({
+        emailNotifications: data.emailNotifications,
+        smsNotifications: data.smsNotifications,
+        pushNotifications: data.pushNotifications,
+        reminderSound: data.reminderSound,
+        reminderFrequency: data.reminderFrequency,
+        theme: data.theme,
+        language: data.language,
+        dateFormat: data.dateFormat,
+        timeFormat: data.timeFormat,
+        defaultStudyDuration: data.defaultStudyDuration,
+        weekStartsOn: data.weekStartsOn,
+        academicYear: data.academicYear,
+        semester: data.semester,
+      });
+    } catch (err: any) {
+      console.error("Failed to fetch settings:", err);
+      toast({
+        title: "Error",
+        description: err.message || "Failed to load settings.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   type SettingsKey = keyof typeof settings;
@@ -86,6 +118,104 @@ const Settings = () => {
     }));
   };
 
+  const handleLoadSettings = async () => {
+    if (!studentNumber || studentNumber.trim() === "") {
+      toast({
+        title: "Student Number Required",
+        description: "Please enter your student number to load settings.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Save to localStorage
+    localStorage.setItem('student_number', studentNumber);
+    setStudentNumberLocked(true);
+    
+    await loadSettings(studentNumber);
+    
+    toast({
+      title: "Settings Loaded",
+      description: "Your settings have been loaded successfully.",
+    });
+  };
+
+  const handleSave = async () => {
+    if (!studentNumber || studentNumber.trim() === "") {
+      toast({
+        title: "Student Number Required",
+        description: "Please enter your student number.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const response = await fetch("http://localhost:5000/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentNumber,
+          ...settings
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to save settings");
+      }
+
+      // Save to localStorage
+      localStorage.setItem('student_number', studentNumber);
+      setStudentNumberLocked(true);
+      
+      toast({
+        title: "Settings Saved",
+        description: "Your preferences have been updated successfully.",
+      });
+    } catch (err: any) {
+      console.error("Error saving settings:", err);
+      toast({
+        title: "Error",
+        description: err.message || "Failed to save settings.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUnlock = () => {
+    setStudentNumberLocked(false);
+    setStudentNumber("");
+    localStorage.removeItem('student_number');
+    setSettings({
+      emailNotifications: true,
+      smsNotifications: false,
+      pushNotifications: true,
+      reminderSound: true,
+      reminderFrequency: "15",
+      theme: "light",
+      language: "en",
+      dateFormat: "DD/MM/YYYY",
+      timeFormat: "24h",
+      defaultStudyDuration: "60",
+      weekStartsOn: "monday",
+      academicYear: "2025",
+      semester: "1",
+    });
+  };
+
+  if (loading && studentNumberLocked) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Loading settings...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Page Header */}
@@ -97,20 +227,63 @@ const Settings = () => {
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">Customize your Orama experience</p>
         </div>
-        <Button 
-          onClick={handleSave}
-          className="bg-orama-primary hover:bg-orama-primary-light text-white w-full sm:w-auto text-sm"
-        >
-          <Save className="h-4 w-4 mr-2" />
-          Save Changes
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          {studentNumberLocked && (
+            <Button 
+              onClick={handleUnlock} 
+              variant="outline"
+              className="border-orama-primary text-orama-primary hover:bg-orama-primary/10"
+            >
+              Change Student Number
+            </Button>
+          )}
+          <Button 
+            onClick={handleSave}
+            disabled={saving || !studentNumberLocked}
+            className="bg-orama-primary hover:bg-orama-primary-light text-white w-full sm:w-auto text-sm"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {saving ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
       </div>
+
+      {/* Student Number Entry */}
+      {!studentNumberLocked && (
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <AlertCircle className="h-6 w-6 text-blue-600 mt-1" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-blue-900 mb-2">Enter Your Student Number</h3>
+                <p className="text-sm text-blue-700 mb-4">
+                  Enter your student number to load or save settings for your profile.
+                </p>
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="e.g., 12345678" 
+                    value={studentNumber}
+                    onChange={(e) => setStudentNumber(e.target.value)}
+                    className="max-w-xs"
+                    onKeyPress={(e) => e.key === 'Enter' && handleLoadSettings()}
+                  />
+                  <Button 
+                    onClick={handleLoadSettings}
+                    disabled={loading}
+                    className="bg-orama-primary hover:bg-orama-primary-light text-white"
+                  >
+                    {loading ? "Loading..." : "Load Settings"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Main Settings */}
         <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-          {/* (Profile Information moved to Profile page) */}
-
           {/* Notification Settings */}
           <Card className="bg-white shadow-lg">
             <CardHeader className="bg-orama-primary text-white p-4 sm:p-6">
@@ -128,6 +301,7 @@ const Settings = () => {
                 <Switch
                   checked={settings.emailNotifications}
                   onCheckedChange={(checked) => handleInputChange('emailNotifications', checked)}
+                  disabled={!studentNumberLocked}
                 />
               </div>
               <Separator />
@@ -139,6 +313,7 @@ const Settings = () => {
                 <Switch
                   checked={settings.smsNotifications}
                   onCheckedChange={(checked) => handleInputChange('smsNotifications', checked)}
+                  disabled={!studentNumberLocked}
                 />
               </div>
               <Separator />
@@ -150,6 +325,7 @@ const Settings = () => {
                 <Switch
                   checked={settings.pushNotifications}
                   onCheckedChange={(checked) => handleInputChange('pushNotifications', checked)}
+                  disabled={!studentNumberLocked}
                 />
               </div>
               <Separator />
@@ -159,6 +335,7 @@ const Settings = () => {
                   <Select 
                     value={settings.reminderFrequency} 
                     onValueChange={(value) => handleInputChange('reminderFrequency', value)}
+                    disabled={!studentNumberLocked}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -180,6 +357,7 @@ const Settings = () => {
                   <Switch
                     checked={settings.reminderSound}
                     onCheckedChange={(checked) => handleInputChange('reminderSound', checked)}
+                    disabled={!studentNumberLocked}
                   />
                 </div>
               </div>
@@ -201,6 +379,7 @@ const Settings = () => {
                   <Select 
                     value={settings.academicYear} 
                     onValueChange={(value) => handleInputChange('academicYear', value)}
+                    disabled={!studentNumberLocked}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -219,6 +398,7 @@ const Settings = () => {
                   <Select 
                     value={settings.semester} 
                     onValueChange={(value) => handleInputChange('semester', value)}
+                    disabled={!studentNumberLocked}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -236,6 +416,7 @@ const Settings = () => {
                   <Select 
                     value={settings.defaultStudyDuration} 
                     onValueChange={(value) => handleInputChange('defaultStudyDuration', value)}
+                    disabled={!studentNumberLocked}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -256,6 +437,7 @@ const Settings = () => {
                   <Select 
                     value={settings.weekStartsOn} 
                     onValueChange={(value) => handleInputChange('weekStartsOn', value)}
+                    disabled={!studentNumberLocked}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -275,7 +457,6 @@ const Settings = () => {
             </CardContent>
           </Card>
         </div>
-
         {/* Sidebar Settings */}
         <div className="space-y-6">
           {/* Appearance Settings */}
@@ -292,6 +473,7 @@ const Settings = () => {
                 <Select 
                   value={settings.theme} 
                   onValueChange={(value) => handleInputChange('theme', value)}
+                  disabled={!studentNumberLocked}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -308,6 +490,7 @@ const Settings = () => {
                 <Select 
                   value={settings.language} 
                   onValueChange={(value) => handleInputChange('language', value)}
+                  disabled={!studentNumberLocked}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -325,6 +508,7 @@ const Settings = () => {
                 <Select 
                   value={settings.dateFormat} 
                   onValueChange={(value) => handleInputChange('dateFormat', value)}
+                  disabled={!studentNumberLocked}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -341,6 +525,7 @@ const Settings = () => {
                 <Select 
                   value={settings.timeFormat} 
                   onValueChange={(value) => handleInputChange('timeFormat', value)}
+                  disabled={!studentNumberLocked}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -351,9 +536,15 @@ const Settings = () => {
                   </SelectContent>
                 </Select>
               </div>
+              {studentNumberLocked && (
+                <div className="pt-4 border-t">
+                  <p className="text-xs text-green-600 font-medium">
+                    ✓ Settings linked to student: {studentNumber}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
-
         </div>
       </div>
     </div>

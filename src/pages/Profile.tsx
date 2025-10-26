@@ -29,24 +29,21 @@ const Profile = () => {
   type ProfileKey = keyof typeof profile;
   type ProfileValue = typeof profile[ProfileKey];
 
-  const handleInputChange = (key: ProfileKey, value: ProfileValue) => {
-    setProfile(prev => ({ ...prev, [key]: value }));
-  };
-
-  // Fetch profile when student number is provided
-  const handleLoadProfile = async () => {
-    if (!profile.studentNumber || profile.studentNumber.trim() === "") {
-      toast({
-        title: "Student Number Required",
-        description: "Please enter your student number to load your profile.",
-        variant: "destructive",
-      });
-      return;
+  // Load student number from localStorage on mount
+  useEffect(() => {
+    const storedStudentNumber = localStorage.getItem('student_number');
+    if (storedStudentNumber) {
+      setProfile(prev => ({ ...prev, studentNumber: storedStudentNumber }));
+      setStudentNumberLocked(true);
+      // Auto-load profile
+      loadProfile(storedStudentNumber);
     }
+  }, []);
 
+  const loadProfile = async (studentNum: string) => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/api/profile/${profile.studentNumber}`);
+      const response = await fetch(`http://localhost:5000/api/profile/${studentNum}`);
       const data = await response.json();
       
       if (!response.ok) {
@@ -54,12 +51,6 @@ const Profile = () => {
       }
       
       setProfile(data);
-      setStudentNumberLocked(true);
-      
-      toast({
-        title: "Profile Loaded",
-        description: "Your profile has been loaded successfully.",
-      });
     } catch (err: any) {
       console.error("Failed to fetch profile:", err);
       toast({
@@ -70,6 +61,32 @@ const Profile = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleInputChange = (key: ProfileKey, value: ProfileValue) => {
+    setProfile(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleLoadProfile = async () => {
+    if (!profile.studentNumber || profile.studentNumber.trim() === "") {
+      toast({
+        title: "Student Number Required",
+        description: "Please enter your student number to load your profile.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Save to localStorage
+    localStorage.setItem('student_number', profile.studentNumber);
+    setStudentNumberLocked(true);
+    
+    await loadProfile(profile.studentNumber);
+    
+    toast({
+      title: "Profile Loaded",
+      description: "Your profile has been loaded successfully.",
+    });
   };
 
   const handleSave = async () => {
@@ -96,6 +113,8 @@ const Profile = () => {
         throw new Error(result.error || "Failed to save profile");
       }
 
+      // Save to localStorage
+      localStorage.setItem('student_number', profile.studentNumber);
       setStudentNumberLocked(true);
       
       toast({
@@ -116,6 +135,7 @@ const Profile = () => {
 
   const handleUnlock = () => {
     setStudentNumberLocked(false);
+    localStorage.removeItem('student_number');
     setProfile({
       fullName: "",
       email: "",
@@ -127,6 +147,14 @@ const Profile = () => {
       allowAnalytics: true,
     });
   };
+
+  if (loading && studentNumberLocked) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Loading profile...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -315,6 +343,16 @@ const Profile = () => {
                   disabled={!studentNumberLocked}
                 />
               </div>
+              {studentNumberLocked && (
+                <>
+                  <Separator />
+                  <div className="pt-2">
+                    <p className="text-xs text-green-600 font-medium">
+                      ✓ Profile active for session
+                    </p>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
