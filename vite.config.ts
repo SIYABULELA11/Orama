@@ -12,6 +12,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   plugins: [react()],
+  base: "/Orama/",
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
