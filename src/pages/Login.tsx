@@ -27,7 +27,7 @@ const Login = () => {
           <div className="sub-heading">Own your time with <span className="title">Orama</span></div>
           <div className="login-btn-stack">
             <button className="create-button" onClick={handleOramaLogin}>
-              Sign up with IKamva Credentials
+              Continue as Visitor
             </button>
             <div className="Or">or</div>
             <a
